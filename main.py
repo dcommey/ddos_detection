@@ -3,17 +3,22 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
 from sklearn.utils import class_weight
+import os
 
 from models import init_server, FederatedTrain
 from data_processing import preprocess_data, split_data_among_clients, initialize_clients
 from utils import (plot_metrics, save_metrics_to_csv, evaluate_model, 
                    plot_training_time, compare_models, plot_all_metrics, 
-                   save_model_summary)
+                   save_model_summary, generate_metrics_table)
 
 def main():
+    # Create results directory if it doesn't exist
+    if not os.path.exists('results'):
+        os.makedirs('results')
+
     # Load and preprocess data
-    train_data = pd.read_csv('ddos_data_train.csv')
-    test_data = pd.read_csv('ddos_data_test.csv')
+    train_data = pd.read_csv('data/ddos_data_train.csv')
+    test_data = pd.read_csv('data/ddos_data_test.csv')
     
     train_data, test_data, label_mapping = preprocess_data(train_data, test_data)
     
@@ -31,7 +36,7 @@ def main():
     initialize_clients(clients, inshape, nclass)
     
     # List of models to compare
-    model_types = ['rnn', 'gru', 'lstm', 'conv1d']
+    model_types = ['gru', 'lstm', 'conv1d']
     
     all_metrics = {}
 
@@ -42,22 +47,25 @@ def main():
         server = init_server(model_type, lr, inshape, nclass)
         
         # Save model summary
-        save_model_summary(server['model'], model_type)
+        save_model_summary(server['model'], model_type, save_dir='results')
         
         # Train the federated model
-        metrics = FederatedTrain(clients, server, val_features, val_labels, epochs=epochs)
+        metrics = FederatedTrain(clients, server, val_features, val_labels, epochs=epochs, save_dir='results')
         
         # Evaluate and save results
-        evaluate_model(server['model'], test_features, test_labels, model_type)
-        plot_metrics(metrics, model_type)
-        plot_training_time(metrics, model_type)
-        save_metrics_to_csv(metrics, model_type)
+        evaluate_model(server['model'], test_features, test_labels, model_type, save_dir='results')
+        plot_metrics(metrics, model_type, save_dir='results')
+        plot_training_time(metrics, model_type, save_dir='results')
+        save_metrics_to_csv(metrics, model_type, save_dir='results')
 
         all_metrics[model_type] = metrics
 
     # Compare all models
-    compare_models(all_metrics)
-    plot_all_metrics(all_metrics)
+    compare_models(all_metrics, save_dir='results')
+    plot_all_metrics(all_metrics, save_dir='results')
+
+    # Generate and save the metrics table
+    generate_metrics_table(all_metrics, save_dir='results')
 
 def split_data(train_data, test_data, inshape, nclass):
     train_features = train_data[:, :-1].astype('float32').reshape(-1, inshape, 1)

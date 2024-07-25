@@ -38,6 +38,7 @@ env/
 # Ignore other generated files and directories
 output/
 results/
+data/
 *.out
 *.err
 *.bak
