@@ -94,8 +94,8 @@ def aggregation_weighted_sum(server, clients):
     
     return aggregated_model
 
-def FederatedTrain(clients, server, val_features, val_labels, epochs=10):
-    main_save_dir = './ddos_saved_models'
+def FederatedTrain(clients, server, val_features, val_labels, epochs=10, save_dir='results'):
+    main_save_dir = os.path.join(save_dir, 'saved_models')
     if not os.path.exists(main_save_dir):
         os.makedirs(main_save_dir)
 
